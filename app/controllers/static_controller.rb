@@ -36,7 +36,6 @@ class StaticController < ApplicationController
     ai, non_ai = "B", "W"
     retrieve_board
     moves_arr = ai_get_all_valid_moves(board: @board, player: ai)
-    ai_check_if_combo(player: ai, board: @board, base_arr: moves_arr) if (moves_arr.first.first.first.to_i - moves_arr.first.last.first.to_i).abs == 2     # modifies and expands moves_arr if there are combo moves
     move = ai_pick_best_move(player: ai, board: @board, moves_arr: moves_arr)
     ai_move_piece(board: @board, move_arr: move)
     ai_check_if_king(board: @board, row: move.last[0].to_i, col: move.last[1].to_i)
@@ -269,6 +268,9 @@ class StaticController < ApplicationController
     if has_eating_move
       moves_arr.delete_if { |move| (move[0][0].to_i - move[1][0].to_i).abs < 2 }
     end
+
+    ai_check_if_combo(player: player, board: board, base_arr: moves_arr) if (moves_arr.first.first.first.to_i - moves_arr.first.last.first.to_i).abs == 2     # modifies and expands moves_arr if there are combo moves
+
     return moves_arr
   end
 
@@ -448,13 +450,11 @@ class StaticController < ApplicationController
 
   def ai_pick_best_move(player:, board:, moves_arr:)
     highest_point = -100
-    strongest_move = 0
+    strongest_move = 0        # have to initialize outside of loop, otherwise can't access it outside of loop. weird stuff.
     moves_arr.each do |move|
       test_board = Marshal.load(Marshal.dump(board))
-      ai_move_piece(board: test_board, move_arr: move)
-      ai_check_if_king(board: test_board, row: move.last[0].to_i, col: move.last[1].to_i)
 
-      point = ai_evaluate_board_recursive(depth: 0, max_depth: 3, player: player, board: test_board)
+      point = ai_evaluate_board_recursive(depth: 3, max_depth: 3, player: player, board: test_board)
       if point > highest_point
         highest_point = point
         strongest_move = move
@@ -465,12 +465,13 @@ class StaticController < ApplicationController
 
 
 
-  def ai_evaluate_board_recursive(depth:, max_depth:, player:, board:, moves_arr:)
-    # if depth => max_depth
+  def ai_evaluate_board_recursive(depth:, max_depth:, player:, board:)
+    if depth >= max_depth
       return ai_evaluate_board_static(player: player, board: board)
-    # else
-
-    # end
+    else
+      ai_move_piece(board: test_board, move_arr: move)
+      ai_check_if_king(board: test_board, row: move.last[0].to_i, col: move.last[1].to_i)
+    end
 
     # moves_arr.each do |move|
     #   test_board = Marshal.load(Marshal.dump(board))
