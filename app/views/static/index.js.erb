@@ -1,0 +1,9 @@
+<% @valid_move.each_with_index do |pos, index| %>
+  <% if @will_eat[index] %>
+    var piece = '<div id="<%=pos[0]%><%=pos[1]%><%=pos[2]%>", class="suggestion-piece will-eat", remote: true></div>';
+    $("#<%=@eaten_piece[index]%>").addClass('eaten-piece-<%=pos%>');
+  <% else %>
+    var piece = '<div id="<%=pos[0]%><%=pos[1]%><%=pos[2]%>", class="suggestion-piece", remote: true></div>';
+  <% end %>
+  $("#<%=pos[1]%><%=pos[2]%>").append(piece);
+<% end %>

@@ -1,0 +1,140 @@
+// Place all the styles related to the static controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+
+
+// .hero-image {
+//     background-image: url("https://a0.muscache.com/airbnb/static/Live-There_Tokyo_Elliott_Artist-Loft_20160222_0153_comp.jpg");
+//     height: 80%;
+//     background-attachment: fixed;
+//     background-position: center;
+//     background-repeat: no-repeat;
+//     background-size: cover;
+// }
+//
+// .mdl-grid {
+//   max-width: 1000px;
+// }
+
+$background-color: #fdfdfd;
+$board-color: #f0f0f0;
+$suggestion-piece-color: #00c853;
+
+body {
+  background-color: $background-color;
+}
+
+.checkers-board {
+  position: relative;
+  margin: auto;
+  top: 10vmin;
+  width: 550px;
+  height: 550px;
+  background-color: $board-color;
+  border: 5px solid $board-color;
+  border-radius: 5px;
+
+  .checker-cell {
+    position: relative;
+    width: 11.45%;
+    height: 11.45%;
+    display: inline-block;
+    border: 1px solid white;
+
+    .checker-piece {
+      width: 80%;
+      height: 80%;
+      border-radius: 100%;
+      margin: auto;
+      top: 10%;
+      position: relative;
+    }
+
+    .black-piece {
+      background-color: black;
+    }
+
+    .white-piece {
+      background-color: white;
+    }
+
+    .king-piece {
+      .king-insignia {
+        top: 32.5%;
+        left: 40%;
+        position: absolute;
+        color: blue;
+        font-weight: bold;
+      }
+    }
+
+    .selected-piece {
+      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+      width: 80%;
+      height: 80%;
+      border-radius: 100%;
+      margin: auto;
+      top: 10%;
+      position: relative;
+    }
+
+    .suggestion-piece {
+      width: 40%;
+      height: 40%;
+      border-radius: 100%;
+      margin: auto;
+      top: 30%;
+      position: relative;
+      background-color: $suggestion-piece-color;
+    }
+
+  }
+
+}
+
+.turn-board {
+  position: absolute;
+  text-align: center;
+  width: 20%;
+  left: 40%;
+  top: 5%;
+}
+
+
+.mode-picker {
+  position: relative;
+  top: 10vmin;
+  margin: auto;
+  width: 550px;
+  height: 550px;
+  background-color: $board-color;
+  border: 5px solid $board-color;
+  border-radius: 5px;
+
+  .mode-button {
+    position: relative;
+    margin: auto;
+    text-align: center;
+    width: 80%;
+    height: 25%;
+    border-radius: 2px;
+    vertical-align: middle;
+
+    .mode-text {
+      color: white;
+      top: 40%;
+      position: relative;
+      font-size: 20px;
+    }
+  }
+
+  .play-ai-button {
+    background-color: #00dd20;
+    top: 20%;
+  }
+
+  .play-2p-button {
+    background-color: #e57373;
+    top: 30%;
+  }
+}
