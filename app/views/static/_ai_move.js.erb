@@ -1,15 +1,6 @@
 $('.checkers-board').remove();
 $('body').append('<%= j render "index" %>');
 
-<% if @ai_combo_move %>
-var board = $(".checkers-board").data('board');
-$.ajax({
-  type: "GET",
-  url: "/ai_move",
-  data: { board: board },
-  dataType: 'script'
-});
-<% end %>
 
 whiteTurn = true;
 blackTurn = false;

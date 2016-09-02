@@ -33,12 +33,11 @@ class StaticController < ApplicationController
 
 
   def ai_move
-    ai, non_ai = "B", "W"
+    @ai = "B"
     retrieve_board
-    moves_arr = ai_get_all_valid_moves(board: @board, player: ai)
-    move = ai_pick_best_move(player: ai, board: @board, moves_arr: moves_arr)
+    ai_minimax_search(max_depth: 4, board: @board, player: @ai)   # assigns an @choice variable to store the strongest move
+    move = @choice    # redundant, but just to make clear
     ai_move_piece(board: @board, move_arr: move)
-    ai_check_if_king(board: @board, row: move.last[0].to_i, col: move.last[1].to_i)
     render partial: "ai_move.js.erb"
   end
 
@@ -315,7 +314,7 @@ class StaticController < ApplicationController
     # king backward movement, left and right
     if board[row][col][1] == "king"
 
-      if type == "W"
+      if player == "W"
         back = row + 1
         double_back = row + 2
       else
@@ -346,6 +345,7 @@ class StaticController < ApplicationController
 
 
   def ai_check_if_combo(board:, player:, base_arr:)
+    return base_arr if (base_arr.first.first.first.to_i - base_arr.first.last.first.to_i).abs == 1
     base_arr.each_with_index do |move, index|
       combo = false
       row = move.last[0].to_i
@@ -402,11 +402,13 @@ class StaticController < ApplicationController
 
       base_arr.delete_at(index) if combo == true
     end
+
+    return base_arr
   end
 
 
 
-  def ai_move_piece(board:, move_arr:)    # piece = ["B", "king"], move_arr ["00","22","44"]
+  def ai_move_piece(board:, move_arr:)    # move_arr ["00","22","44"]
     piece = board[move_arr.first.first.to_i][move_arr.first.last.to_i]
     move_arr.each_with_index do |move, index|
       next if index == 0
@@ -436,6 +438,8 @@ class StaticController < ApplicationController
       board[new_row][new_col] = piece
     end
 
+    ai_check_if_king(board: board, row: move_arr.last[0].to_i, col: move_arr.last[1].to_i)
+
   end
 
 
@@ -448,47 +452,42 @@ class StaticController < ApplicationController
 
 
 
-  def ai_pick_best_move(player:, board:, moves_arr:)
-    highest_point = -100
-    strongest_move = 0        # have to initialize outside of loop, otherwise can't access it outside of loop. weird stuff.
-    moves_arr.each do |move|
-      test_board = Marshal.load(Marshal.dump(board))
+  def ai_minimax_search(depth: 0, max_depth:, player:, board:)
 
-      point = ai_evaluate_board_recursive(depth: 3, max_depth: 3, player: player, board: test_board)
-      if point > highest_point
-        highest_point = point
-        strongest_move = move
-      end
-    end
-    return strongest_move
-  end
-
-
-
-  def ai_evaluate_board_recursive(depth:, max_depth:, player:, board:)
     if depth >= max_depth
-      return ai_evaluate_board_static(player: player, board: board)
+      return ai_evaluate_board(player: @ai, board: board)
     else
-      ai_move_piece(board: test_board, move_arr: move)
-      ai_check_if_king(board: test_board, row: move.last[0].to_i, col: move.last[1].to_i)
+      depth += 1
+      points = []   # array of points
+
+      player == "B" ? enemy = "W" : enemy = "B"
+
+      moves_arr = ai_get_all_valid_moves(board: board, player: player)
+
+      moves_arr.each do |move|
+        test_board = Marshal.load(Marshal.dump(board))
+        ai_move_piece(board: test_board, move_arr: move)
+
+        points << ai_minimax_search(depth: depth, max_depth: max_depth, player: enemy, board: test_board)
+      end
+
+      if player == @ai
+        max_point_index = points.each_with_index.max.last
+        @choice = moves_arr[max_point_index]
+        return points[max_point_index]
+      else
+        min_point_index = points.each_with_index.min.last
+        @choice = moves_arr[min_point_index]
+        return points[min_point_index]
+      end
+
     end
 
-    # moves_arr.each do |move|
-    #   test_board = Marshal.load(Marshal.dump(board))
-    #   ai_move_piece(board: test_board, move_arr: move)
-    #   ai_check_if_king(board: test_board, row: move.last[0].to_i, col: move.last[1].to_i)
-    #
-    #
-    # opponent_moves_arr = ai_get_all_valid_moves(board: @test_board, player: non_ai)
-    # ai_check_if_combo(player: non_ai, board: @test_board, base_arr: opponent_moves_arr) if (opponent_moves_arr.first.first.first.to_i - opponent_moves_arr.first.last.first.to_i).abs == 2     # modifies and expands moves_arr if there are combo moves
-    # opponent_move = ai_pick_best_move(moves_arr: moves_arr)
-    # ai_move_piece(board: @board, move_arr: move)
-    # ai_check_if_king(board: @board, row: move.last[0].to_i, col: move.last[1].to_i)
   end
 
 
 
-  def ai_evaluate_board_static(player:, board:)
+  def ai_evaluate_board(player:, board:)
     player == "B" ? enemy = "W" : enemy = "B"
 
     point = 0
