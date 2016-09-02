@@ -287,7 +287,7 @@ class StaticController < ApplicationController
       moves_arr.delete_if { |move| (move[0][0].to_i - move[1][0].to_i).abs < 2 }
     end
 
-    ai_check_if_combo(player: player, board: board, base_arr: moves_arr) if (moves_arr.first.first.first.to_i - moves_arr.first.last.first.to_i).abs == 2     # modifies and expands moves_arr if there are combo moves
+    ai_check_if_combo(player: player, board: board, base_arr: moves_arr) if moves_arr != [] && (moves_arr.first.first.first.to_i - moves_arr.first.last.first.to_i).abs == 2     # modifies and expands moves_arr if there are combo moves
 
     return moves_arr
   end
@@ -314,7 +314,7 @@ class StaticController < ApplicationController
 
     # right movement
     if front <= 7 && front >= 0 && right <= 7
-      if double_right <= 7 && double_front <= 7 && board[front][right][0] == enemy && board[double_front][double_right][0] == ""
+      if double_right <= 7 && double_front <= 7 && double_front >= 0 && board[front][right][0] == enemy && board[double_front][double_right][0] == ""
         valid_moves << [row.to_s + col.to_s, double_front.to_s + double_right.to_s]
       elsif board[front][right][0] == ""
         valid_moves << [row.to_s + col.to_s, front.to_s + right.to_s]
@@ -323,7 +323,7 @@ class StaticController < ApplicationController
 
     # left movement
     if front <= 7 && front >= 0 && left >= 0
-      if double_left >= 0 && double_front <= 7 && board[front][left][0] == enemy && board[double_front][double_left][0] == ""
+      if double_left >= 0 && double_front <= 7 && double_front >= 0 &&  board[front][left][0] == enemy && board[double_front][double_left][0] == ""
         valid_moves << [row.to_s + col.to_s, double_front.to_s + double_left.to_s]
       elsif board[front][left][0] == ""
         valid_moves << [row.to_s + col.to_s, front.to_s + left.to_s]
@@ -342,7 +342,7 @@ class StaticController < ApplicationController
       end
 
       if back <= 7 && back >= 0 && right <= 7
-        if double_right <= 7 && double_back <= 7 && board[back][right][0] == enemy && board[double_back][double_right][0] == ""
+        if double_right <= 7 && double_back <= 7 && double_back >= 0 && board[back][right][0] == enemy && board[double_back][double_right][0] == ""
           valid_moves << [row.to_s + col.to_s, double_back.to_s + double_right.to_s]
         elsif board[back][right][0] == ""
           valid_moves << [row.to_s + col.to_s, back.to_s + right.to_s]
@@ -350,7 +350,7 @@ class StaticController < ApplicationController
       end
 
       if back <= 7 && back >= 0 && left >= 0
-        if double_left >= 0 && double_back <= 7 && board[back][left][0] == enemy && board[double_back][double_left][0] == ""
+        if double_left >= 0 && double_back <= 7 && double_back >= 0 && board[back][left][0] == enemy && board[double_back][double_left][0] == ""
           valid_moves << [row.to_s + col.to_s, double_back.to_s + double_left.to_s]
         elsif board[back][left][0] == ""
           valid_moves << [row.to_s + col.to_s, back.to_s + left.to_s]
@@ -385,13 +385,13 @@ class StaticController < ApplicationController
         double_front = row + 2
       end
 
-      if double_right <= 7 && double_front <= 7 && board[front][right][0] == enemy && board[double_front][double_right][0] == ""
+      if double_right <= 7 && double_front <= 7 && double_front >= 0 && board[front][right][0] == enemy && board[double_front][double_right][0] == ""
         combo_move = move + [double_front.to_s + double_right.to_s]
         base_arr << combo_move
         combo = true
       end
 
-      if double_left >= 0 && double_front <= 7 && board[front][left][0] == enemy && board[double_front][double_left][0] == ""
+      if double_left >= 0 && double_front <= 7 && double_front >= 0 && board[front][left][0] == enemy && board[double_front][double_left][0] == ""
         combo_move = move + [double_front.to_s + double_left.to_s]
         base_arr << combo_move
         combo = true
@@ -406,13 +406,13 @@ class StaticController < ApplicationController
           double_back = row - 2
         end
 
-        if double_right <= 7 && double_back <= 7 && board[back][right][0] == enemy && board[double_back][double_right][0] == ""
+        if double_right <= 7 && double_back <= 7 && double_back >= 0 && board[back][right][0] == enemy && board[double_back][double_right][0] == ""
           combo_move = move + [double_back.to_s + double_right.to_s]
           base_arr << combo_move
           combo = true
         end
 
-        if double_left >= 0 && double_back <= 7 && board[back][left][0] == enemy && board[double_back][double_left][0] == ""
+        if double_left >= 0 && double_back <= 7 && double_back >= 0 && board[back][left][0] == enemy && board[double_back][double_left][0] == ""
           combo_move = move + [double_back.to_s + double_left.to_s]
           base_arr << combo_move
           combo = true
@@ -473,7 +473,7 @@ class StaticController < ApplicationController
 
   def ai_minimax_search(depth: 0, max_depth:, player:, board:)
 
-    if depth >= max_depth
+    if depth >= max_depth || game_ended?(board: board)
       return ai_evaluate_board(player: @ai, board: board)
     else
       depth += 1
@@ -482,6 +482,7 @@ class StaticController < ApplicationController
       player == "B" ? enemy = "W" : enemy = "B"
 
       moves_arr = ai_get_all_valid_moves(board: board, player: player)
+      return ai_evaluate_board(player: @ai, board:board) if moves_arr == []   # a rescue for when no valid moves at all (stuck)
 
       moves_arr.each do |move|
         test_board = Marshal.load(Marshal.dump(board))
@@ -524,6 +525,27 @@ class StaticController < ApplicationController
       end
     end
     return point
+  end
+
+
+
+  def game_ended?(board:)
+    white_present = false
+    black_present = false
+    board.each do |row|
+      row.each do |piece|
+        if piece.include?("W")
+          white_present = true
+        elsif piece.include?("B")
+          black_present = true
+        end
+      end
+    end
+    if black_present && white_present
+      return false
+    else
+      return true
+    end
   end
 
 
