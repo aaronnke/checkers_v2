@@ -27,7 +27,7 @@ body {
 .checkers-board {
   position: relative;
   margin: auto;
-  top: 10vmin;
+  top: 0vmin;
   width: 550px;
   height: 550px;
   background-color: $board-color;
@@ -92,18 +92,48 @@ body {
 
 }
 
-.turn-board {
-  position: absolute;
-  text-align: center;
-  width: 20%;
-  left: 40%;
-  top: 5%;
+
+.overhead-menu {
+  position: relative;
+  margin: auto;
+  width: 550px;
+  height: 10vmin;
+
+  .turn-board {
+    position: absolute;
+    text-align: center;
+    width: 25%;
+    left: 40%;
+    bottom: 30%;
+    z-index: 2;
+  }
+
+  .undo-button {
+    text-align: center;
+    background-color: red;
+    position: absolute;
+    font-size: 13px;
+    width: 60px;
+    height: 30px;
+    left: 89%;
+    bottom: 20%;
+    border-radius: 2px;
+    z-index: 2;
+
+    .undo-text {
+      position: relative;
+      top: 20%;
+      color: white;
+    }
+
+  }
+
 }
 
 
 .mode-picker {
   position: relative;
-  top: 10vmin;
+  top: 0vmin;
   margin: auto;
   width: 550px;
   height: 550px;

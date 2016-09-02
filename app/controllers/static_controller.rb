@@ -21,6 +21,16 @@ class StaticController < ApplicationController
       format.js {
         store_old_location
         store_new_location
+
+        @old_board = []
+        params[:board].each do |row_key, row_value|
+          row_arr = []
+          row_value.each do |cell_key, cell_value|
+            row_arr << cell_value
+          end
+          @old_board << row_arr
+        end
+
         update_board
         check_if_combo
         check_if_king
@@ -31,11 +41,20 @@ class StaticController < ApplicationController
     end
   end
 
+  def undo
+    respond_to do |format|
+      format.js {
+        retrieve_board
+        render partial: "undo.js.erb"
+      }
+    end
+  end
+
 
   def ai_move
     @ai = "B"
     retrieve_board
-    ai_minimax_search(max_depth: 4, board: @board, player: @ai)   # assigns an @choice variable to store the strongest move
+    ai_minimax_search(max_depth: 3, board: @board, player: @ai)   # assigns an @choice variable to store the strongest move
     move = @choice    # redundant, but just to make clear
     ai_move_piece(board: @board, move_arr: move)
     render partial: "ai_move.js.erb"

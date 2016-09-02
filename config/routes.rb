@@ -3,4 +3,5 @@ Rails.application.routes.draw do
   root "static#index"
   get "/complete_move" => "static#complete_move", as: :complete_move
   get "/ai_move" => "static#ai_move", as: :ai_move
+  get "/undo" => "static#undo"
 end

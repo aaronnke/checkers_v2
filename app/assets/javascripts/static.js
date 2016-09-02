@@ -6,12 +6,14 @@ mode = false;
   document.addEventListener("turbolinks:load", function() {
     $('.checkers-board').hide();
     $('.turn-board').hide();
+    $('.undo-button').hide();
 
     $('.play-2p-button').click(function() {
       mode = "2p"
       $('.mode-picker').hide();
       $('.checkers-board').show();
       $('.turn-board').show();
+      $('.undo-button').show();
     })
 
     $('.play-ai-button').click(function() {
@@ -19,6 +21,17 @@ mode = false;
       $('.mode-picker').hide();
       $('.checkers-board').show();
       $('.turn-board').show();
+      $('.undo-button').show();
+    })
+
+    $('.undo-button').click(function() {
+      var old_board = $(".old-board").data('board');
+      $.ajax({
+        type: "GET",
+        url: "/undo",
+        data: { board: old_board },
+        dataType: 'script'
+      });
     })
 
 

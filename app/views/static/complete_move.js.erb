@@ -1,5 +1,8 @@
 $('.checkers-board').remove();
-$('body').append('<%= j render "index" %>');
+$('body').append('<%= j render "board" %>');
+$('.old-board').remove();
+$('body').append('<%= content_tag "div", class: "old-board", data: {board: @old_board} do %> <% end %>');
+
 
 <% if @new_type == "W" %>
 
