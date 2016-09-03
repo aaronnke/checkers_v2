@@ -8,7 +8,7 @@ class StaticController < ApplicationController
 	  	}
 
 	  	format.js {
-        retrieve_board
+        @board = retrieve_board(board: params[:board])
         store_current_location
         check_valid_moves(type: @type, col: @col, row: @row)
       }
@@ -31,7 +31,7 @@ class StaticController < ApplicationController
           @old_board << row_arr
         end
 
-        update_board
+        update_board(board: params[:board])
         check_if_combo
         check_if_king
         if params[:mode] == "ai"
@@ -44,7 +44,7 @@ class StaticController < ApplicationController
   def undo
     respond_to do |format|
       format.js {
-        retrieve_board
+        @board = retrieve_board(board: params[:board])
         render partial: "undo.js.erb"
       }
     end
@@ -53,10 +53,10 @@ class StaticController < ApplicationController
 
   def ai_move
     @ai = "B"
-    retrieve_board
+    @board = retrieve_board(board: params[:board])
     ai_minimax_search(max_depth: 3, board: @board, player: @ai)   # assigns an @choice variable to store the strongest move
     move = @choice    # redundant, but just to make clear
-    ai_move_piece(board: @board, move_arr: move)
+    ai_move_piece(board: @board, move_arr: move)    # updates @board with the move, which will be rendered
     render partial: "ai_move.js.erb"
   end
 
@@ -67,10 +67,20 @@ class StaticController < ApplicationController
   private
 
   def generate_checkers_board
-    @board = []
-    8.times do |number|
-      @board << ("O"*8).split("")
-    end
+    @board = Array.new(8) {Array.new(8) { |index| ["",""] }}
+    #
+    # white_pawn = ["W", "pawn"]
+    # black_pawn = ["B", "pawn"]
+    # white_king = ["W", "king"]
+    # black_king = ["B", "king"]
+
+    # @board[0][1] = black_pawn
+    # @board[2][3] = black_pawn
+    # @board[0][5] = black_pawn
+    # @board[3][2] = white_king
+    # @board[2][5] = white_pawn
+    # @board[4][1] = white_pawn
+    # @board[7][6] = white_pawn
 
     @board.map!.with_index do |cell, row|
       cell.map!.with_index do |cell, col|
@@ -91,15 +101,16 @@ class StaticController < ApplicationController
   end
 
 
-  def retrieve_board
-    @board = []
-    params[:board].each do |row_key, row_value|
+  def retrieve_board(board:)
+    sanitized_board = []
+    board.each do |row_key, row_value|
       row_arr = []
       row_value.each do |cell_key, cell_value|
         row_arr << cell_value
       end
-      @board << row_arr
+      sanitized_board << row_arr
     end
+    return sanitized_board
   end
 
 
@@ -119,8 +130,8 @@ class StaticController < ApplicationController
   end
 
 
-  def update_board
-    retrieve_board
+  def update_board(board:)
+    @board = retrieve_board(board: board)
     piece = @board[@old_row][@old_col]
     @board[@old_row][@old_col] = ["", ""]
     @board[@new_row][@new_col] = piece
