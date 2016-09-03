@@ -2,17 +2,27 @@
 <%= content_tag "div", class: "checkers-board", data: {board: @board} do %>
   <% @board.each.with_index do |row, row_index| %>
     <% row.each.with_index do |cell, col_index| %>
-      <div id="<%=row_index%><%=col_index%>" class="checker-cell">
       <% if cell[1] == "pawn" && cell[0] == "B" %>
-        <div id="B<%=row_index%><%=col_index%>", class="black-piece checker-piece", remote: true ></div>
+        <div id="<%=row_index%><%=col_index%>" class="checker-cell dark-checker-cell">
+          <div id="B<%=row_index%><%=col_index%>", class="black-piece checker-piece", remote: true ></div>
+        </div>
       <% elsif cell[1] == "pawn" && cell[0] == "W" %>
-        <div id="W<%=row_index%><%=col_index%>", class="white-piece checker-piece", remote: true ></div>
+        <div id="<%=row_index%><%=col_index%>" class="checker-cell dark-checker-cell">
+          <div id="W<%=row_index%><%=col_index%>", class="white-piece checker-piece", remote: true ></div>
+        </div>
       <% elsif cell[1] == "king" && cell[0] == "B" %>
-        <div id="B<%=row_index%><%=col_index%>", class="king-piece black-piece checker-piece", remote: true > <span class="king-insignia"> K </span> </div>
+        <div id="<%=row_index%><%=col_index%>" class="checker-cell dark-checker-cell">
+          <div id="B<%=row_index%><%=col_index%>", class="king-piece black-piece checker-piece", remote: true > <span class="king-insignia"> K </span> </div>
+        </div>
       <% elsif cell[1] == "king" && cell[0] == "W" %>
-        <div id="W<%=row_index%><%=col_index%>", class="king-piece white-piece checker-piece", remote: true > <span class="king-insignia"> K </span> </div>
+        <div id="<%=row_index%><%=col_index%>" class="checker-cell dark-checker-cell">
+          <div id="W<%=row_index%><%=col_index%>", class="king-piece white-piece checker-piece", remote: true > <span class="king-insignia"> K </span> </div>
+        </div>
+      <% elsif (row_index%2 == 0 && col_index%8%2 != 0) || (row_index%2 != 0 && col_index%8%2 == 0) %>
+        <div id="<%=row_index%><%=col_index%>" class="checker-cell dark-checker-cell"> </div>
+      <% else %>
+        <div id="<%=row_index%><%=col_index%>" class="checker-cell light-checker-cell"> </div>
       <% end %>
-      </div>
     <% end %>
   <% end %>
 <% end %>

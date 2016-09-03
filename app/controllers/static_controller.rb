@@ -52,11 +52,13 @@ class StaticController < ApplicationController
 
 
   def ai_move
-    @ai = "B"
+    @ai, @non_ai = "B", "W"
     @board = retrieve_board(board: params[:board])
     ai_minimax_search(max_depth: 3, board: @board, player: @ai)   # assigns an @choice variable to store the strongest move
     move = @choice    # redundant, but just to make clear
     ai_move_piece(board: @board, move_arr: move)    # updates @board with the move, which will be rendered
+    @winner = game_ended?(board: @board, turn: @non_ai)
+
     render partial: "ai_move.js.erb"
   end
 
@@ -68,28 +70,20 @@ class StaticController < ApplicationController
 
   def generate_checkers_board
     @board = Array.new(8) {Array.new(8) { |index| ["",""] }}
-    #
+
     # white_pawn = ["W", "pawn"]
     # black_pawn = ["B", "pawn"]
     # white_king = ["W", "king"]
     # black_king = ["B", "king"]
 
-    # @board[0][1] = black_pawn
-    # @board[2][3] = black_pawn
-    # @board[0][5] = black_pawn
-    # @board[3][2] = white_king
-    # @board[2][5] = white_pawn
-    # @board[4][1] = white_pawn
-    # @board[7][6] = white_pawn
-
     @board.map!.with_index do |cell, row|
       cell.map!.with_index do |cell, col|
-        putter = "B" if row == 0 and col%2 == 0
-        putter = "B" if row == 1 and col%2 != 0
-        putter = "B" if row == 2 and col%2 == 0
-        putter = "W" if row == 5 and col%2 != 0
-        putter = "W" if row == 6 and col%2 == 0
-        putter = "W" if row == 7 and col%2 != 0
+        putter = "B" if row == 0 and col%2 != 0
+        putter = "B" if row == 1 and col%2 == 0
+        putter = "B" if row == 2 and col%2 != 0
+        putter = "W" if row == 5 and col%2 == 0
+        putter = "W" if row == 6 and col%2 != 0
+        putter = "W" if row == 7 and col%2 == 0
         if putter == "B" || putter == "W"
           rank = "pawn"
         else
@@ -396,13 +390,13 @@ class StaticController < ApplicationController
         double_front = row + 2
       end
 
-      if double_right <= 7 && double_front <= 7 && double_front >= 0 && board[front][right][0] == enemy && board[double_front][double_right][0] == ""
+      if double_right <= 7 && double_front <= 7 && double_front >= 0 && board[front][right][0] == enemy && board[double_front][double_right][0] == "" && move.include?("#{double_front}#{double_right}") == false
         combo_move = move + [double_front.to_s + double_right.to_s]
         base_arr << combo_move
         combo = true
       end
 
-      if double_left >= 0 && double_front <= 7 && double_front >= 0 && board[front][left][0] == enemy && board[double_front][double_left][0] == ""
+      if double_left >= 0 && double_front <= 7 && double_front >= 0 && board[front][left][0] == enemy && board[double_front][double_left][0] == "" && move.include?("#{double_front}#{double_left}") == false
         combo_move = move + [double_front.to_s + double_left.to_s]
         base_arr << combo_move
         combo = true
@@ -417,13 +411,13 @@ class StaticController < ApplicationController
           double_back = row - 2
         end
 
-        if double_right <= 7 && double_back <= 7 && double_back >= 0 && board[back][right][0] == enemy && board[double_back][double_right][0] == ""
+        if double_right <= 7 && double_back <= 7 && double_back >= 0 && board[back][right][0] == enemy && board[double_back][double_right][0] == "" && move.include?("#{double_back}#{double_right}") == false
           combo_move = move + [double_back.to_s + double_right.to_s]
           base_arr << combo_move
           combo = true
         end
 
-        if double_left >= 0 && double_back <= 7 && double_back >= 0 && board[back][left][0] == enemy && board[double_back][double_left][0] == ""
+        if double_left >= 0 && double_back <= 7 && double_back >= 0 && board[back][left][0] == enemy && board[double_back][double_left][0] == "" && move.include?("#{double_back}#{double_left}") == false
           combo_move = move + [double_back.to_s + double_left.to_s]
           base_arr << combo_move
           combo = true
@@ -484,16 +478,14 @@ class StaticController < ApplicationController
 
   def ai_minimax_search(depth: 0, max_depth:, player:, board:)
 
-    if depth >= max_depth || game_ended?(board: board)
+    if depth >= max_depth || game_ended?(board: board, turn: player)
       return ai_evaluate_board(player: @ai, board: board)
     else
       depth += 1
       points = []   # array of points
-
       player == "B" ? enemy = "W" : enemy = "B"
 
       moves_arr = ai_get_all_valid_moves(board: board, player: player)
-      return ai_evaluate_board(player: @ai, board:board) if moves_arr == []   # a rescue for when no valid moves at all (stuck)
 
       moves_arr.each do |move|
         test_board = Marshal.load(Marshal.dump(board))
@@ -520,6 +512,13 @@ class StaticController < ApplicationController
 
   def ai_evaluate_board(player:, board:)
     player == "B" ? enemy = "W" : enemy = "B"
+    winner = game_ended?(board: board, turn: player)
+
+    if winner == player
+      return point = 1000
+    elsif winner == enemy
+      return point = -1000
+    end
 
     point = 0
     board.each do |row|
@@ -540,7 +539,7 @@ class StaticController < ApplicationController
 
 
 
-  def game_ended?(board:)
+  def game_ended?(board:, turn:)     # returns the winner ("black"), or false
     white_present = false
     black_present = false
     board.each do |row|
@@ -553,9 +552,18 @@ class StaticController < ApplicationController
       end
     end
     if black_present && white_present
-      return false
+      white_moves_arr = ai_get_all_valid_moves(board: board, player: "W")
+      black_moves_arr = ai_get_all_valid_moves(board: board, player: "B")
+      if white_moves_arr.empty? && turn == "W"
+        return "black"
+      elsif black_moves_arr.empty? && turn == "B"
+        return "white"
+      else
+        return false
+      end
     else
-      return true
+      return "black" if black_present
+      return "white" if white_present
     end
   end
 
