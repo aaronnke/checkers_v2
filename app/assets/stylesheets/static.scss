@@ -185,3 +185,53 @@ body {
     top: 30%;
   }
 }
+
+
+.side-picker {
+  position: relative;
+  top: 0vmin;
+  margin: auto;
+  width: 550px;
+  height: 550px;
+  background-color: $board-color;
+  border: 5px solid $board-color;
+  border-radius: 5px;
+  text-align: center;
+
+  .side-button {
+    position: relative;
+    margin: auto;
+    text-align: center;
+    width: 80%;
+    height: 25%;
+    border-radius: 2px;
+
+    .side-text {
+      color: red;
+      top: 40%;
+      position: relative;
+      font-size: 20px;
+    }
+  }
+
+  .rule-tip-box {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    top: 8%;
+
+    .rule-tip-text {
+      font-size: 16px;
+    }
+  }
+
+  .black-side-button {
+    background-color: #0f0f0f;
+    top: 20%;
+  }
+
+  .white-side-button {
+    background-color: white;
+    top: 30%;
+  }
+}

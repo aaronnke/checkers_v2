@@ -1,0 +1,9 @@
+<% @valid_moves.each do |move| %>
+  var piece = '<div id="<%= @player %><%= move.first.first %><%= move.first.last %><%= move.last.first %><%= move.last.last %>", class="suggestion-piece"></div>';
+  $("#<%= move.last.first%><%=move.last.last %>").append(piece);
+  <% move.each_with_index do |piece, index| %>
+    <% next if index == 0 || piece == move.last %>
+    var stepPiece = '<div class="step-piece"></div>';
+    $("#<%= piece.first%><%=piece.last %>").append(stepPiece);
+  <% end %>
+<% end %>

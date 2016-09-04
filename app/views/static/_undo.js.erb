@@ -1,7 +1,15 @@
 $('.checkers-board').remove();
 $('body').append('<%= j render "board" %>');
 
-noSelectedPiece = true;
-whiteTurn = true;
-blackTurn = false;
-$('.turn-board').text("White's move.");
+<% if @player == "B" %>
+  $('.checkers-board')[0].style.transform = "rotate(180deg)";
+  noSelectedPiece = true;
+  whiteTurn = false;
+  blackTurn = true;
+  $('.turn-board').text("Black's move.");
+<% else %>
+  noSelectedPiece = true;
+  whiteTurn = true;
+  blackTurn = false;
+  $('.turn-board').text("White's move.");
+<% end %>

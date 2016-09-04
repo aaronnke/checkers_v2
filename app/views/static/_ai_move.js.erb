@@ -1,21 +1,31 @@
 $('.checkers-board').remove();
 $('body').append('<%= j render "board" %>');
 
+<% if @player == "B" %>
+  $('.checkers-board')[0].style.transform = "rotate(180deg)";
+<% end %>
+
 <% if @winner %>
   $('.turn-board').text("<%= @winner.capitalize %> wins!");
   whiteTurn = false;
   blackTurn = false;
 <% else %>
-  whiteTurn = true;
-  blackTurn = false;
-  $('.turn-board').text("White's move.");
+  <% if @player == "W" %>
+    whiteTurn = true;
+    blackTurn = false;
+    $('.turn-board').text("White's move.");
+  <% else %>
+    whiteTurn = false;
+    blackTurn = true;
+    $('.turn-board').text("Black's move.");
+  <% end %>
 
   <% if ((@opponent_valid_moves.first.first.first.to_i - @opponent_valid_moves.first.last.first.to_i).abs == 2) %>
     noSelectedPiece = false;
     <% @opponent_valid_moves.each do |move| %>
       $('#<%= (@board[move[0][0].to_i][move[0][1].to_i]).first %><%= move[0][0] %><%= move[0][1] %>').removeClass('checker-piece');
       $('#<%= (@board[move[0][0].to_i][move[0][1].to_i]).first %><%= move[0][0] %><%= move[0][1] %>').addClass('selected-piece');
-      var piece = '<div id="<%= @non_ai %><%= move.first.first %><%= move.first.last %><%= move.last.first %><%= move.last.last %>", class="suggestion-piece"></div>';
+      var piece = '<div id="<%= @player %><%= move.first.first %><%= move.first.last %><%= move.last.first %><%= move.last.last %>", class="suggestion-piece"></div>';
       $("#<%= move.last.first%><%=move.last.last %>").append(piece);
     <% end %>
   <% end %>

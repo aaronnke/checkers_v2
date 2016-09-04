@@ -1,12 +1,20 @@
 class StaticController < ApplicationController
+  include StaticHelper
 
   def index
     respond_to do |format|
+      format.html {}
+      format.js {
+        @player = params[:player]
+        @board = generate_checkers_board
+        @mode = params[:mode]
+      }
+  end
+end
 
-	  	format.html {
-        generate_checkers_board
-	  	}
 
+  def check_move
+    respond_to do |format|
 	  	format.js {
         @board = retrieve_board(board: params[:board])
         @player = params[:piece][0]
@@ -36,6 +44,7 @@ class StaticController < ApplicationController
         @board = retrieve_board(board: params[:board])
         @old_board = Marshal.load(Marshal.dump(@board))   # for undo move
         @player = params[:move][0]
+        @player == "B" ? @ai = "W" : @ai = "B"
         @old_row = params[:move][1]
         @old_col = params[:move][2]
         @row = params[:move][3]
@@ -55,7 +64,7 @@ class StaticController < ApplicationController
           @error = true
         end
 
-        @winner = game_ended?(board: @board, turn: "B")
+        @winner = game_ended?(board: @board, turn: @ai)
 
         if params[:mode] == "ai" && !@winner
           @ai_move = true
@@ -69,6 +78,7 @@ class StaticController < ApplicationController
     respond_to do |format|
       format.js {
         @board = retrieve_board(board: params[:board])
+        @player = params[:player]
         render partial: "undo.js.erb"
       }
     end
@@ -76,14 +86,15 @@ class StaticController < ApplicationController
 
 
   def ai_move
-    @ai, @non_ai = "B", "W"
+    @player = params[:player]
+    @player == "B" ? @ai = "W" : @ai = "B"
     @board = retrieve_board(board: params[:board])
-    ai_minimax_search(max_depth: 3, board: @board, player: @ai)   # assigns an @choice variable to store the strongest move
+    ai_minimax_search(max_depth: 4, board: @board, player: @ai)   # assigns an @choice variable to store the strongest move
     move = @choice    # redundant, but just to make clear
     ai_move_piece(board: @board, move_arr: move)    # updates @board with the move, which will be rendered
 
-    @winner = game_ended?(board: @board, turn: @non_ai)
-    @opponent_valid_moves = ai_get_all_valid_moves(player: @non_ai, board: @board)    # finds all valid moves for other player to check for must-eat move
+    @winner = game_ended?(board: @board, turn: @player)
+    @opponent_valid_moves = ai_get_all_valid_moves(player: @player, board: @board)    # finds all valid moves for other player to check for must-eat move
 
     render partial: "ai_move.js.erb"
   end
@@ -95,7 +106,7 @@ class StaticController < ApplicationController
   private
 
   def generate_checkers_board
-    @board = Array.new(8) {Array.new(8) { |index| ["",""] }}
+    board = Array.new(8) {Array.new(8) { |index| ["",""] }}
 
     white_pawn = ["W", "pawn"]
     black_pawn = ["B", "pawn"]
@@ -103,7 +114,7 @@ class StaticController < ApplicationController
     black_king = ["B", "king"]
     empty_cell = ["", ""]
 
-    @board.map!.with_index do |cell, row|
+    board.map!.with_index do |cell, row|
       cell.map!.with_index do |cell, col|
         if (row%2 == 0 && col%8%2 != 0) || (row%2 != 0 && col%8%2 == 0)
           if row < 3
@@ -119,6 +130,7 @@ class StaticController < ApplicationController
       end
     end
 
+    return board
   end
 
 

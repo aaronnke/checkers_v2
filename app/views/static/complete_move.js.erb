@@ -1,5 +1,9 @@
 $('.checkers-board').remove();
 $('body').append('<%= j render "board" %>');
+<% if @player == "B" %>
+  $('.checkers-board')[0].style.transform = "rotate(180deg)";
+<% end %>
+
 $('.old-board').remove();
 $('body').append('<%= content_tag "div", class: "old-board", data: {board: @old_board} do %> <% end %>');
 
@@ -12,6 +16,10 @@ $('body').append('<%= content_tag "div", class: "old-board", data: {board: @old_
       whiteTurn = false;
       blackTurn = true;
       $('.turn-board').text("Black is thinking.");
+  <% elsif @player == "B" %>
+      whiteTurn = true;
+      blackTurn = false;
+      $('.turn-board').text("White is thinking.");
   <% end %>
 
 
@@ -20,12 +28,12 @@ $('body').append('<%= content_tag "div", class: "old-board", data: {board: @old_
     $.ajax({
       type: "GET",
       url: "/ai_move",
-      data: { board: board },
+      data: { board: board, player: player },
       dataType: 'script'
     });
   <% end %>
 
 <% else %>
   $('.turn-board').text("Invalid move.");
-  setTimeout(function(){ $('.turn-board').text("White's move."); }, 2000);
+  setTimeout(function(){ $('.turn-board').text("<%= full_name(player: @player) %>'s move."); }, 2000);
 <% end %>

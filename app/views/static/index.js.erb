@@ -1,9 +1,18 @@
-<% @valid_moves.each do |move| %>
-  var piece = '<div id="<%= @player %><%= move.first.first %><%= move.first.last %><%= move.last.first %><%= move.last.last %>", class="suggestion-piece"></div>';
-  $("#<%= move.last.first%><%=move.last.last %>").append(piece);
-  <% move.each_with_index do |piece, index| %>
-    <% next if index == 0 || piece == move.last %>
-    var stepPiece = '<div class="step-piece"></div>';
-    $("#<%= piece.first%><%=piece.last %>").append(stepPiece);
-  <% end %>
+$('body').append('<%= j render "board" %>');
+
+<% if @player == "B" %>
+  $('.checkers-board')[0].style.transform = "rotate(180deg)";
+<% end %>
+
+$('.turn-board').html("Black starts.");
+$('.undo-text').html("UNDO");
+
+<% if @mode == "ai" && @player == "W" %>
+  var board = $(".checkers-board").data('board');
+  $.ajax({
+    type: "GET",
+    url: "/ai_move",
+    data: { board: board, player: player },
+    dataType: 'script'
+  });
 <% end %>

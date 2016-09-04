@@ -1,4 +1,3 @@
-
 <%= content_tag "div", class: "checkers-board", data: {board: @board} do %>
   <% @board.each.with_index do |row, row_index| %>
     <% row.each.with_index do |cell, col_index| %>
