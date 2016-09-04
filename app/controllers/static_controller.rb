@@ -9,8 +9,22 @@ class StaticController < ApplicationController
 
 	  	format.js {
         @board = retrieve_board(board: params[:board])
-        store_current_location
-        check_valid_moves(type: @type, col: @col, row: @row)
+        @player = params[:piece][0]
+        @row = params[:piece][1].to_i
+        @col = params[:piece][2].to_i
+        @valid_moves = check_ai_piece_valid_moves(board: @board, player: @player, row: @row, col: @col)
+
+        has_eating_move = false     # check if all valid moves has eating moves, if it does, delete all non-eating moves
+        @valid_moves.each do |move|
+          if (move[0][0].to_i - move[1][0].to_i).abs >= 2  # checks if move eats
+            has_eating_move = true
+          end
+        end
+        if has_eating_move
+          @valid_moves.delete_if { |move| (move[0][0].to_i - move[1][0].to_i).abs < 2 }
+        end
+
+        ai_check_if_combo(board: @board, player: @player, base_arr: @valid_moves)
       }
   	end
   end
@@ -19,27 +33,37 @@ class StaticController < ApplicationController
   def complete_move
     respond_to do |format|
       format.js {
-        store_old_location
-        store_new_location
+        @board = retrieve_board(board: params[:board])
+        @old_board = Marshal.load(Marshal.dump(@board))   # for undo move
+        @player = params[:move][0]
+        @old_row = params[:move][1]
+        @old_col = params[:move][2]
+        @row = params[:move][3]
+        @col = params[:move][4]
+        @valid_moves = ai_get_all_valid_moves(player: @player, board: @board)
 
-        @old_board = []
-        params[:board].each do |row_key, row_value|
-          row_arr = []
-          row_value.each do |cell_key, cell_value|
-            row_arr << cell_value
+        valid_move = []         # check if the selected move is valid (must eat)
+        @valid_moves.each do |move|
+          if move.last == @row + @col && move.first == @old_row + @old_col
+            valid_move = move
           end
-          @old_board << row_arr
         end
 
-        update_board(board: params[:board])
-        check_if_combo
-        check_if_king
-        if params[:mode] == "ai"
+        if valid_move.present?
+          ai_move_piece(board: @board, move_arr: valid_move)
+        else
+          @error = true
+        end
+
+        @winner = game_ended?(board: @board, turn: "B")
+
+        if params[:mode] == "ai" && !@winner
           @ai_move = true
         end
       }
     end
   end
+
 
   def undo
     respond_to do |format|
@@ -57,7 +81,9 @@ class StaticController < ApplicationController
     ai_minimax_search(max_depth: 3, board: @board, player: @ai)   # assigns an @choice variable to store the strongest move
     move = @choice    # redundant, but just to make clear
     ai_move_piece(board: @board, move_arr: move)    # updates @board with the move, which will be rendered
+
     @winner = game_ended?(board: @board, turn: @non_ai)
+    @opponent_valid_moves = ai_get_all_valid_moves(player: @non_ai, board: @board)    # finds all valid moves for other player to check for must-eat move
 
     render partial: "ai_move.js.erb"
   end
@@ -71,25 +97,25 @@ class StaticController < ApplicationController
   def generate_checkers_board
     @board = Array.new(8) {Array.new(8) { |index| ["",""] }}
 
-    # white_pawn = ["W", "pawn"]
-    # black_pawn = ["B", "pawn"]
-    # white_king = ["W", "king"]
+    white_pawn = ["W", "pawn"]
+    black_pawn = ["B", "pawn"]
+    # white_king = ["W", "king"]      # for testing purposes
     # black_king = ["B", "king"]
+    empty_cell = ["", ""]
 
     @board.map!.with_index do |cell, row|
       cell.map!.with_index do |cell, col|
-        putter = "B" if row == 0 and col%2 != 0
-        putter = "B" if row == 1 and col%2 == 0
-        putter = "B" if row == 2 and col%2 != 0
-        putter = "W" if row == 5 and col%2 == 0
-        putter = "W" if row == 6 and col%2 != 0
-        putter = "W" if row == 7 and col%2 == 0
-        if putter == "B" || putter == "W"
-          rank = "pawn"
+        if (row%2 == 0 && col%8%2 != 0) || (row%2 != 0 && col%8%2 == 0)
+          if row < 3
+            cell = black_pawn
+          elsif row > 4
+            cell = white_pawn
+          else
+            cell = empty_cell
+          end
         else
-          rank = ""
+          cell = empty_cell
         end
-        cell = [putter, rank]
       end
     end
   end
@@ -107,165 +133,6 @@ class StaticController < ApplicationController
     return sanitized_board
   end
 
-
-  def store_old_location
-    @old_piece = params[:oldLoc]
-    @old_type = params[:oldLoc][0]
-    @old_row = params[:oldLoc][1].to_i
-    @old_col = params[:oldLoc][2].to_i
-  end
-
-
-  def store_new_location
-    @new_piece = params[:newLoc]
-    @new_type = params[:newLoc][0]
-    @new_row = params[:newLoc][1].to_i
-    @new_col = params[:newLoc][2].to_i
-  end
-
-
-  def update_board(board:)
-    @board = retrieve_board(board: board)
-    piece = @board[@old_row][@old_col]
-    @board[@old_row][@old_col] = ["", ""]
-    @board[@new_row][@new_col] = piece
-    if params[:eatenPiece]
-      @board[params[:eatenPiece][1].to_i][params[:eatenPiece][2].to_i] = ["", ""]
-    end
-  end
-
-
-  def store_current_location
-    @piece = params[:piece]
-    @type = params[:piece][0]
-    @row = params[:piece][1].to_i
-    @col = params[:piece][2].to_i
-  end
-
-
-  def check_valid_moves(type:, col:, row:)
-    @complete_move_array = get_complete_move_array(type: type, col: col, row: row)
-    @valid_move = @complete_move_array[0]
-    @will_eat = @complete_move_array[1]
-    @eaten_piece = @complete_move_array[2]
-  end
-
-
-  def get_complete_move_array(type:, col:, row:)
-    left = col - 1
-    double_left = col - 2
-    right = col + 1
-    double_right = col + 2
-
-    if type == "W"
-      enemy = "B"
-      front = row - 1
-      double_front = row - 2
-    else
-      enemy = "W"
-      front = row + 1
-      double_front = row + 2
-    end
-
-    valid_move = []
-    will_eat = []
-    eaten_piece = []
-
-    # right movement
-    if front <= 7 && front >= 0 && right <= 7
-      if double_right <= 7 && double_front <= 7 && @board[front][right][0] == enemy && @board[double_front][double_right][0] == ""
-        valid_move << type + (double_front).to_s + (double_right).to_s
-        will_eat << true
-        eaten_piece << enemy + front.to_s + right.to_s
-      elsif @board[front][right][0] == ""
-        valid_move << type + (front).to_s + (right).to_s
-        eaten_piece << false
-        will_eat << false
-      end
-    end
-
-    # left movement
-    if front <= 7 && front >= 0 && left >= 0
-      if double_left >= 0 && double_front <= 7 && @board[front][left][0] == enemy && @board[double_front][double_left][0] == ""
-        valid_move << type + (double_front).to_s + (double_left).to_s
-        will_eat << true
-        eaten_piece << enemy + front.to_s + left.to_s
-      elsif @board[front][left][0] == ""
-        valid_move << type + front.to_s + left.to_s
-        eaten_piece << false
-        will_eat << false
-      end
-    end
-
-    # king backward movement, left and right
-    if @board[row][col][1] == "king"
-
-      if type == "W"
-        back = row + 1
-        double_back = row + 2
-      else
-        back = row - 1
-        double_back = row - 2
-      end
-
-      if back <= 7 && back >= 0 && right <= 7
-        if double_right <= 7 && double_back <= 7 && @board[back][right][0] == enemy && @board[double_back][double_right][0] == ""
-          valid_move << type + (double_back).to_s + (double_right).to_s
-          will_eat << true
-          eaten_piece << enemy + back.to_s + right.to_s
-        elsif @board[back][right][0] == ""
-          valid_move << type + (back).to_s + (right).to_s
-          will_eat << false
-          eaten_piece << false
-        end
-      end
-
-      if back <= 7 && back >= 0 && left >= 0
-        if double_left >= 0 && double_back <= 7 && @board[back][left][0] == enemy && @board[double_back][double_left][0] == ""
-          valid_move << type + (double_back).to_s + (double_left).to_s
-          will_eat << true
-          eaten_piece << enemy + back.to_s + left.to_s
-        elsif @board[back][left][0] == ""
-          valid_move << type + back.to_s + left.to_s
-          will_eat << false
-          eaten_piece << false
-        end
-      end
-    end
-
-    return [valid_move, will_eat, eaten_piece]
-  end
-
-
-  def check_if_combo
-    @combo_move = false
-    if params[:eatenPiece]
-      @combo_valid_move = []
-      @combo_eaten_piece = []
-      @complete_combo_array = get_complete_move_array(type: @new_type, col: @new_col, row: @new_row)
-
-      @complete_combo_array[2].each_with_index do |eaten_piece, index|
-        if eaten_piece    # there is another piece to be eaten
-          @combo_valid_move << @complete_combo_array[0][index]
-          @combo_eaten_piece << @complete_combo_array[2][index]
-          @combo_move = true
-        end
-      end
-    end
-  end
-
-
-  def check_if_king
-    if @new_type == "W" && @new_row == 0
-      @board[@new_row][@new_col][1] = "king"
-    elsif @new_type == "B" && @new_row == 7
-      @board[@new_row][@new_col][1] = "king"
-    end
-  end
-
-  #==============================================================================# ========================================================================
-  #================================== AI logic ==================================# ========================================================================
-  #==============================================================================# ========================================================================
 
   def ai_get_all_valid_moves(player:, board:)
     moves_arr = []
@@ -470,6 +337,8 @@ class StaticController < ApplicationController
 
   def ai_check_if_king(board:, row:, col:)
     if board[row][col][0] == "B" && row == 7
+      board[row][col][1] = "king"
+    elsif board[row][col][0] == "W" && row == 0
       board[row][col][1] = "king"
     end
   end

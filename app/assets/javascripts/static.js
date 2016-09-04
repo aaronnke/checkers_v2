@@ -88,23 +88,12 @@ mode = false;
       $(document).on('click', '.suggestion-piece', function () {
         noSelectedPiece = true;
         var board = $(".checkers-board").data('board');
-        if (this.classList.contains("will-eat")) {
-          var eatingMove = this.id
-          $.ajax({
-            type: "GET",
-            url: "/complete_move",
-            data: { mode: mode, newLoc: this.id, oldLoc: $(".selected-piece")[0].id, eatenPiece: $('.eaten-piece-' + eatingMove)[0].id, board: board },
-            dataType: 'script'
-          });
-        }
-        else {
-          $.ajax({
-            type: "GET",
-            url: "/complete_move",
-            data: { mode: mode, newLoc: this.id, oldLoc: $(".selected-piece")[0].id, board: board },
-            format: 'js'
-          });
-        }
+        $.ajax({
+          type: "GET",
+          url: "/complete_move",
+          data: { mode: mode, move: this.id, board: board },
+          format: 'js'
+        });
       })
 
       $(document).on('click', '.selected-piece', function () {

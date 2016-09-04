@@ -3,54 +3,29 @@ $('body').append('<%= j render "board" %>');
 $('.old-board').remove();
 $('body').append('<%= content_tag "div", class: "old-board", data: {board: @old_board} do %> <% end %>');
 
-
-<% if @new_type == "W" %>
-
-  <% if @combo_move %>
-    $('.turn-board').text("Complete your combo, white.");
-    noSelectedPiece = false;
-    $('#<%= @new_piece %>').removeClass('checker-piece');
-    $('#<%= @new_piece %>').addClass('selected-piece');
-    <% @combo_valid_move.each_with_index do |pos, index| %>
-      var piece = '<div id="<%=pos[0]%><%=pos[1]%><%=pos[2]%>", class="suggestion-piece will-eat", remote: true></div>';
-      $("#<%=@combo_eaten_piece[index]%>").addClass('eaten-piece-<%=pos%>');
-      $("#<%=pos[1]%><%=pos[2]%>").append(piece);
-    <% end %>
-
-  <% else %>
+<% unless @error %>
+  <% if @winner %>
+    $('.turn-board').text("<%= @winner.capitalize %> wins!");
     whiteTurn = false;
-    blackTurn = true;
-    $('.turn-board').text("Black is thinking.");
+    blackTurn = false;
+  <% elsif @player == "W" %>
+      whiteTurn = false;
+      blackTurn = true;
+      $('.turn-board').text("Black is thinking.");
+  <% end %>
 
+
+  <% if @ai_move %>
+    var board = $(".checkers-board").data('board');
+    $.ajax({
+      type: "GET",
+      url: "/ai_move",
+      data: { board: board },
+      dataType: 'script'
+    });
   <% end %>
 
 <% else %>
-
-  <% if @combo_move %>
-    $('.turn-board').text("Complete your combo, black.");
-    noSelectedPiece = false;
-    $('#<%= @new_piece %>').removeClass('checker-piece');
-    $('#<%= @new_piece %>').addClass('selected-piece');
-    <% @combo_valid_move.each_with_index do |pos, index| %>
-      var piece = '<div id="<%=pos[0]%><%=pos[1]%><%=pos[2]%>", class="suggestion-piece will-eat", remote: true></div>';
-      $("#<%=@combo_eaten_piece[index]%>").addClass('eaten-piece-<%=pos%>');
-      $("#<%=pos[1]%><%=pos[2]%>").append(piece);
-    <% end %>
-
-  <% else %>
-    whiteTurn = true;
-    blackTurn = false;
-    $('.turn-board').text("White's move.");
-  <% end %>
-
-<% end %>
-
-<% if @ai_move && !@combo_move %>
-var board = $(".checkers-board").data('board');
-$.ajax({
-  type: "GET",
-  url: "/ai_move",
-  data: { board: board },
-  dataType: 'script'
-});
+  $('.turn-board').text("Invalid move.");
+  setTimeout(function(){ $('.turn-board').text("White's move."); }, 2000);
 <% end %>

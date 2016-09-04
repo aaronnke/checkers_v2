@@ -95,6 +95,16 @@ body {
       background-color: $suggestion-piece-color;
     }
 
+    .step-piece {
+      width: 20%;
+      height: 20%;
+      border-radius: 100%;
+      margin: auto;
+      top: 40%;
+      position: relative;
+      background-color: $suggestion-piece-color;
+    }
+
   }
 
 }
