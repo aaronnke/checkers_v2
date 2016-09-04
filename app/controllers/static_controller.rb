@@ -99,8 +99,8 @@ class StaticController < ApplicationController
 
     white_pawn = ["W", "pawn"]
     black_pawn = ["B", "pawn"]
-    # white_king = ["W", "king"]      # for testing purposes
-    # black_king = ["B", "king"]
+    white_king = ["W", "king"]      # for testing purposes
+    black_king = ["B", "king"]
     empty_cell = ["", ""]
 
     @board.map!.with_index do |cell, row|
@@ -118,6 +118,7 @@ class StaticController < ApplicationController
         end
       end
     end
+
   end
 
 
@@ -383,27 +384,119 @@ class StaticController < ApplicationController
     player == "B" ? enemy = "W" : enemy = "B"
     winner = game_ended?(board: board, turn: player)
 
+    if winner == "white"
+      winner = "W"
+    elsif winner == "black"
+      winner = "B"
+    end
+
     if winner == player
       return point = 1000
     elsif winner == enemy
       return point = -1000
     end
 
+    pawn_value = 5.0
+    king_value = 10.0
+    neg_value = -1
+
     point = 0
-    board.each do |row|
-      row.each do |piece|
+    board.each_with_index do |row_arr, row_index|
+      if row_index == 0 || row_index == 7
+        row_value = 1.3
+      elsif row_index == 1 || row_index == 6
+        row_value = 1.2
+      elsif row_index == 2 || row_index == 5
+        row_value = 1.1
+      else
+        row_value = 1.0
+      end
+
+      row_arr.each_with_index do |piece, col_index|
         if piece.include?(player) && piece.include?("king")
-          point += 3
+          score = king_value*row_value
         elsif piece.include? player
-          point += 1
+          score = pawn_value*row_value
         elsif piece.include?(enemy) && piece.include?("king")
-          point -= 3
+          score = neg_value*king_value*row_value
         elsif piece.include? enemy
-          point -= 1
+          score = neg_value*pawn_value*row_value
+        else
+          score = 0
         end
+
+        exposure = evaluate_exposure(player: piece.first, row: row_index, col: col_index, board: board) if piece.first.present?
+
+        if exposure == "threatened"
+          score /= 2
+        elsif exposure == "defended"
+          score *= 1.5
+        end
+
+        point += score
       end
     end
     return point
+  end
+
+
+  def evaluate_exposure(player:, row:, col:, board:)
+    left = col - 1
+    right = col + 1
+
+    if player == "W"
+      enemy = "B"
+      front = row - 1
+      back = row + 1
+    else
+      enemy = "W"
+      front = row + 1
+      back = row - 1
+    end
+
+    # front right enemy?
+    if front <= 7 && front >= 0 && right <= 7 && board[front][right][0] == enemy
+      if back <= 7 && back >= 0 && left >= 0 && board[back][left][0].empty?
+        threatened = true
+      elsif back >= 7 || back <= 0 || left <= 0 || board[back][left][0] == player
+        defended = true
+      end
+
+    # front left enemy?
+    elsif front <= 7 && front >= 0 && left >= 0 && board[front][left][0] == enemy
+      if back <= 7 && back >= 0 && right <= 7 && board[back][right][0].empty?
+        threatened = true
+      elsif back >= 7 || back <= 0 || right >= 7 || board[back][right][0] == player
+        defended = true
+      end
+
+    # back right enemy is king?
+  elsif back <= 7 && back >= 0 && right <= 7 && board[back][right][0] == enemy && board[back][right][1] == "king"
+      if front <= 7 && front >= 0 && left >= 0 && board[front][left][0].empty?
+        threatened = true
+      elsif front >= 7 || front <= 0 || left <= 0 || board[front][left][0] == player
+        defended = true
+      end
+
+    # back left enemy is king?
+    elsif back <= 7 && back >= 0 && left >= 0 && board[back][left][0] == enemy && board[back][left][1] == "king"
+      if front <= 7 && front >= 0 && right <= 7 && board[front][right][0].empty?
+        threatened = true
+      elsif front >= 7 || front <= 0 || right >= 7 || board[front][right][0] == player
+        defended = true
+      end
+
+    end
+
+    if threatened                   # this way, threated takes precedence.
+      exposure = "threatened"
+    elsif defended
+      exposure = "defended"
+    else
+      exposure = "neutral"
+    end
+
+    return exposure
   end
 
 
