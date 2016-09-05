@@ -123,6 +123,7 @@ whiteTurn = false;
       $(document).on('click', '.selected-piece', function () {
         noSelectedPiece = true;
         $('.suggestion-piece').remove();
+        $('.step-piece').remove();
         $(this).removeClass('selected-piece');
         $(this).addClass('checker-piece');
       })
