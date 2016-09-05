@@ -1,24 +1,15 @@
 # README
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+A simple checkers game with an AI which uses minimax search.
 
-Things you may want to cover:
+<b>Details:</b>
 
-* Ruby version
+* Lookahead is set to 4. This means AI thinks 4 moves ahead.
 
-* System dependencies
+* Evaluation function is based on board state(pawn count, king count, position, exposure). Weights are far from properly adjusted.
 
-* Configuration
+* You can only undo 1 move at a time.
 
-* Database creation
+* You must eat when you can.
 
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+* It's quite laggy on heroku.
